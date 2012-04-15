@@ -27,12 +27,9 @@ var filterInput = function (inputString){
  */
 io.sockets.on('connection', function (socket) {
 
-  var user = {
-    username: 'guest' + socket.id,
-    room:     'lobby' // Default room
-  };
+  var user = {};
 
-  var updateRoomList = function (){
+  var updateUsersList = function (){
     // Refresh the users in the chat room.
     var usernames = [];
     io.sockets.clients(user.room).forEach(function (socket){
@@ -43,24 +40,44 @@ io.sockets.on('connection', function (socket) {
     io.sockets.in(user.room).emit('updateUserList', usernames);
   };
 
+  var updateRoomsList = function (){
+    var hash = [];
+    // get all channel list
+    var rooms = socket.manager.rooms;
+    for(var channel in rooms) {
+      channel = channel + "";
+      channel = channel.replace(/^\//,'');
+      if (channel){
+        hash.push(channel);
+      }
+    }
+    io.sockets.emit('updateRooms', hash);
+    console.log(hash);
+  };
+
   /**
-   * Add new user to the list. Assign user to the lobby.
+   * Update user info.
    * @param  {string} username : Desired username
    */
   socket.on('setUser', function (userConfig){
-
-    username = filterInput(userConfig.username);
-    if (username) {
-      user.username = username;
-    }
+    userConfig = userConfig || {};
+    userConfig.username = filterInput(userConfig.username) || "guest" + socket.id;
+    userConfig.room     = filterInput(userConfig.room) || "local";
     /**
      * Set user variable to socket for reaching later.
      */
-    socket.set('user', user, function (){
-      // Add user to chat room
-      socket.join(user.room);
-      updateRoomList();
-      socket.emit('setClientData', user);
+    socket.set('user', userConfig, function (){
+      if (!user.room){
+        socket.join(userConfig.room);
+      }else if (user.room !== userConfig.room) {
+        socket.leave(user.room);
+        updateUsersList();
+        socket.join(userConfig.room);
+      }
+      user = userConfig;
+      updateUsersList();
+      updateRoomsList();
+      socket.emit("setClientData", user);
     });
   });
 
@@ -72,8 +89,11 @@ io.sockets.on('connection', function (socket) {
     io.sockets.in(user.room).emit('updateChat', '<b>' + user.username + ':</b> ' + filterInput(message));
   });
 
+  /**
+   * Remove user from room in disconnect
+   */
   socket.on('disconnect', function (){
     socket.leave(user.room);
-    updateRoomList(user.room);
+    updateUsersList(user.room);
   });
 });

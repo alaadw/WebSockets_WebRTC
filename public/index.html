@@ -12,8 +12,34 @@
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
   <script src="js/client.js"></script>
   <style type="text/css">
+  #rooms {
+    height: 400px;
+    width: 200px;
+    border: 1px solid;
+    overflow: auto;
+    float:left;
+  }
+  #users{
+    height: 400px;
+    width: 200px;
+    border: 1px solid;
+    overflow: auto;
+    float:left;
+  }
+  #rooms li,#users li, #chatScreen li{
+    list-style: none;
+  }
   #rooms>ul>li.currentRoom{
     font-weight:bold;
+  }
+  #chatScreen{
+    height: 400px;
+    width: 500px;
+    border: 1px solid;
+    overflow: auto;
+  }
+  footer{
+    clear:both;
   }
   </style>
 </head>
@@ -22,12 +48,12 @@
   <header>
     <h1>Chat application</h1>
     <div id="info"></div>
+    <input type="button" id="changeUsername" value="Change Username">
+    <input type="button" id="changeRoom" value="Change Room">
   </header>
 
   <aside id="rooms">
-    <ul>
-      <li class="currentRoom">lobby</li>
-    </ul>
+    <ul></ul>
   </aside>
 
   <aside id="users">
