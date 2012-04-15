@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Node.js &amp; socket.io</title>
+  <meta name="description" content="This is an experimental project. Trying to make a web conference using WebRTC.">
+  <meta name="author" content="Rüştü Seyhun Sarıyıldız">
+  <!--[if lt IE 9]>
+  <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  <script src="//dev.html5cam.com:8080/socket.io/socket.io.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+  <script src="js/client.js"></script>
+  <style type="text/css">
+  #rooms>ul>li.currentRoom{
+    font-weight:bold;
+  }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Chat application</h1>
+    <div id="info"></div>
+  </header>
+
+  <aside id="rooms">
+    <ul>
+      <li class="currentRoom">lobby</li>
+    </ul>
+  </aside>
+
+  <aside id="users">
+    <ul></ul>
+  </aside>
+
+  <div id="chatScreen">
+    <ul></ul>
+    <input type="text"><input type="button" value="Send">
+  </div>
+
+  <footer>
+    <p>&copy; Rüştü Seyhun Sarıyıldız 2012</p>
+  </footer>
+
+</body>
+</html>
