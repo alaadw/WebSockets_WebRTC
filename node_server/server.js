@@ -30,7 +30,7 @@ io.sockets.on('connection', function (socket) {
   var user = {
     username: 'guest' + socket.id,
     room:     'lobby' // Default room
-  }
+  };
 
   var updateRoomList = function (){
     // Refresh the users in the chat room.
@@ -47,13 +47,12 @@ io.sockets.on('connection', function (socket) {
    * Add new user to the list. Assign user to the lobby.
    * @param  {string} username : Desired username
    */
-  socket.on('addUser', function (username){
+  socket.on('setUser', function (userConfig){
 
-    username = filterInput(username);
+    username = filterInput(userConfig.username);
     if (username) {
       user.username = username;
     }
-
     /**
      * Set user variable to socket for reaching later.
      */
@@ -77,5 +76,4 @@ io.sockets.on('connection', function (socket) {
     socket.leave(user.room);
     updateRoomList(user.room);
   });
-
 });

@@ -1,8 +1,27 @@
-// Global variables
-var socket = io.connect('//' + window.location.host + ':8080'), username, room;
+var username, room;
+/**
+ * Send text message to the room
+ */
+var sendMessage = function (){
+    var textField = $('#chatScreen>input[type=text]')[0];
+    var msg = textField.value;
+    textField.value = "";
+    socket.emit('sendMessage', msg);
+};
+var socket = io.connect('//' + window.location.host + ':8080');
+
+/**
+ * Set initial data on connection.
+ */
+socket.on('connect', function (){
+  socket.emit('setUser', {
+    room: 'lobby',
+    username: prompt("Username:")
+  });
+});
 /**
  * Set client data
- * @param  {[Object]} user username and room is stored
+ * @param  {Object} user : username and room is stored
  */
 socket.on('setClientData', function (user){
   username = user.username;
@@ -11,7 +30,7 @@ socket.on('setClientData', function (user){
 });
 /**
  * Update chat list for the room
- * @param  {[Array]} users Array of the users
+ * @param  {Array} users : Array of the users
  */
 socket.on('updateUserList', function (users){
   $('#users>ul').html('');
@@ -23,15 +42,7 @@ socket.on('updateUserList', function (users){
 socket.on('updateChat', function (message){
   $('#chatScreen>ul').append('<li>' + message + '</li>');
 });
-/**
- * Send text message to the room
- */
-var sendMessage = function (){
-    var textField = $('#chatScreen>input[type=text]')[0];
-    var msg = textField.value;
-    textField.value = "";
-    socket.emit('sendMessage', msg);
-}
+
 // Page load
 $(function (){
   // Send message bindings
@@ -42,6 +53,4 @@ $(function (){
       sendMessage();
     }
   });
-  // Prompt username and set
-  socket.emit('addUser', prompt("Nickname:"));
 });
