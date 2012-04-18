@@ -31,13 +31,16 @@ io.sockets.on('connection', function (socket) {
 
   var updateUsersList = function (){
     // Refresh the users in the chat room.
-    var usernames = [];
+    var response = [];
     io.sockets.clients(user.room).forEach(function (socket){
       socket.get('user', function (err, fetchedUser){
-        usernames.push(fetchedUser.username);
+        response.push({
+          username: fetchedUser.username,
+          isTyping: fetchedUser.typing
+        });
       });
     });
-    io.sockets.in(user.room).emit('updateUserList', usernames);
+    io.sockets.in(user.room).emit('updateUserList', response);
   };
 
   var updateRoomsList = function (){
@@ -46,13 +49,15 @@ io.sockets.on('connection', function (socket) {
     var rooms = socket.manager.rooms;
     for(var channel in rooms) {
       channel = channel + "";
-      channel = channel.replace(/^\//,'');
+      name = channel.replace(/^\//,'');
       if (channel){
-        hash.push(channel);
+        hash.push({
+          roomName: name,
+          totalUsers: rooms[channel].length
+        });
       }
     }
     io.sockets.emit('updateRooms', hash);
-    console.log(hash);
   };
 
   /**
@@ -61,8 +66,9 @@ io.sockets.on('connection', function (socket) {
    */
   socket.on('setUser', function (userConfig){
     userConfig = userConfig || {};
-    userConfig.username = filterInput(userConfig.username) || "guest" + socket.id;
+    userConfig.username = filterInput(userConfig.username) || "guest" +  Math.floor(Math.random()*1000001).toString();
     userConfig.room     = filterInput(userConfig.room) || "local";
+    userConfig.typing   = userConfig.typing ? true : false;
     /**
      * Set user variable to socket for reaching later.
      */
@@ -86,7 +92,10 @@ io.sockets.on('connection', function (socket) {
    * @param  {[type]} message
    */
   socket.on('sendMessage', function (message){
-    io.sockets.in(user.room).emit('updateChat', '<b>' + user.username + ':</b> ' + filterInput(message));
+    io.sockets.in(user.room).emit('updateChat', {
+      username: user.username,
+      message: filterInput(message)
+    });
   });
 
   /**

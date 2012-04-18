@@ -1,4 +1,3 @@
-var testData;
 (function (){
   /**
    * Wait page to load
@@ -28,14 +27,18 @@ var testData;
       var updateUserList = function (users){
         $('#users>ul').html('');
         $(users).each(function (index, element){
-          $('#users>ul').append('<li>' + element + '</li>');
+          var typingText = "";
+          if (element.isTyping){
+            typingText = " (typing)";
+          }
+          $('#users>ul').append('<li>' + element.username + typingText + '</li>');
         });
       };
       /**
        * Message received function.
        */
-      var resMsg = function (msg){
-        $('#chatScreen>ul').append('<li>' + msg + '</li>');
+      var resMsg = function (resMsg){
+        $('#chatScreen>ul').append('<li><b>' + resMsg.username + '</b>: ' + resMsg.message + '</li>');
       };
       /**
        * Send text message to the room
@@ -44,6 +47,7 @@ var testData;
           var textField = $('#chatScreen>input[type=text]')[0];
           var msg = textField.value;
           textField.value = "";
+          stopTyping();
           socket.emit('sendMessage', msg);
       };
       var changeUsername = function (){
@@ -57,23 +61,40 @@ var testData;
       var updateRooms = function (rooms){
         $('#rooms>ul').html('');
         $(rooms).each(function (index, element){
-          $('#rooms>ul').append('<li>' + element + '</li>');
+          $('#rooms>ul').append('<li>' + element.roomName + ' (' + element.totalUsers + ')</li>');
         });
       };
+      var startTyping = function (){
+        user.typing = true;
+        socket.emit('setUser', user);
+      };
+      var stopTyping = function (){
+        user.typing = false;
+        socket.emit('setUser', user);
+      };
+      // listeners
       socket.on('setClientData', setUserInfo);
       socket.on('updateUserList', updateUserList);
       socket.on('updateChat', resMsg);
       socket.on('updateRooms', updateRooms);
+      // initialize user
       socket.emit('setUser', user);
       /**
        * Bind send message
        * @type {[type]}
        */
       $('#chatScreen>input[type=button]').click(sendMessage);
-      $('#chatScreen>input[type=text]').bind('keypress', function (e){
+      $('#chatScreen>input[type=text]').bind('keyup', function (e){
         var code = (e.keyCode ? e.keyCode : e.which);
         if(code == 13) {
           sendMessage();
+        }
+        if (this.value.length === 0){
+          stopTyping();
+        }else{
+          if (user.typing === false){
+            startTyping();
+          }
         }
       });
       /**
