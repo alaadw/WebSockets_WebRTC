@@ -11,63 +11,53 @@
   <script src="//dev.html5cam.com:8080/socket.io/socket.io.js"></script>
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
   <script src="js/client.js"></script>
-  <style type="text/css">
-  #rooms {
-    height: 400px;
-    width: 200px;
-    border: 1px solid;
-    overflow: auto;
-    float:left;
-  }
-  #users{
-    height: 400px;
-    width: 200px;
-    border: 1px solid;
-    overflow: auto;
-    float:left;
-  }
-  #rooms li,#users li, #chatScreen li{
-    list-style: none;
-  }
-  #rooms>ul>li.currentRoom{
-    font-weight:bold;
-  }
-  #chatScreen{
-    height: 400px;
-    width: 500px;
-    border: 1px solid;
-    overflow: auto;
-  }
-  footer{
-    clear:both;
-  }
-  </style>
+  <link rel="stylesheet" type="text/css" href="css/bootstrap.css">
+  <link rel="stylesheet" type="text/css" href="css/style.css">
 </head>
 <body>
-
-  <header>
-    <h1>Chat application</h1>
-    <div id="info"></div>
-    <input type="button" id="changeUsername" value="Change Username">
-    <input type="button" id="changeRoom" value="Change Room">
-  </header>
-
-  <aside id="rooms">
-    <ul></ul>
-  </aside>
-
-  <aside id="users">
-    <ul></ul>
-  </aside>
-
-  <div id="chatScreen">
-    <ul></ul>
-    <input type="text"><input type="button" value="Send">
-  </div>
-
-  <footer>
-    <p>&copy; Rüştü Seyhun Sarıyıldız 2012</p>
-  </footer>
-
+    <div class="topbar">
+      <div class="fill">
+        <div class="container">
+          <a class="brand" href="/">Chat App</a>
+          <ul class="nav">
+            <li class="active"><a href="/">Home</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+          <form action="" class="pull-right">
+            <input type="button" id="changeUsername" value="Change Username">
+            <input type="button" id="changeRoom" value="Change Room">
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="content">
+        <div class="page-header">
+          <h1><span id="username"></span> <small>at <span id="room"></span></small></h1>
+        </div>
+        <div class="row">
+          <div class="span4 lists">
+            <h3>Rooms</h3>
+            <div class="rooms">
+              <ul></ul>
+            </div>
+            <h3>Users</h3>
+            <div class="users">
+              <ul></ul>
+            </div>
+          </div>
+          <div class="span10">
+            <div class="chatScreen">
+              <ul></ul>
+              <input type="text"><input type="button" value="Send">
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer>
+        <p>&copy; Rüştü Seyhun Sarıyıldız 2012</p>
+      </footer>
+    </div> <!-- /container -->
 </body>
 </html>

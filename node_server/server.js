@@ -7,7 +7,6 @@ var http = require('http'),
   io = require('socket.io').listen(app),
   check = require('validator').check,
   sanitize = require('validator').sanitize;
-
 /**
  * Sanitize the input string
  * @param  {String} inputString : The input from user
@@ -21,14 +20,11 @@ var filterInput = function (inputString){
   }
   return inputString;
 };
-
 /**
  * Triggered when a user connects
  */
 io.sockets.on('connection', function (socket) {
-
   var user = {};
-
   var updateUsersList = function (){
     // Refresh the users in the chat room.
     var response = [];
@@ -42,14 +38,13 @@ io.sockets.on('connection', function (socket) {
     });
     io.sockets.in(user.room).emit('updateUserList', response);
   };
-
   var updateRoomsList = function (){
     var hash = [];
     // get all channel list
     var rooms = socket.manager.rooms;
     for(var channel in rooms) {
       channel = channel + "";
-      name = channel.replace(/^\//,'');
+      name = channel.replace(/^\//, '');
       if (channel){
         hash.push({
           roomName: name,
@@ -59,7 +54,6 @@ io.sockets.on('connection', function (socket) {
     }
     io.sockets.emit('updateRooms', hash);
   };
-
   /**
    * Update user info.
    * @param  {string} username : Desired username
@@ -69,20 +63,35 @@ io.sockets.on('connection', function (socket) {
     userConfig.username = filterInput(userConfig.username) || "guest" +  Math.floor(Math.random()*1000001).toString();
     userConfig.room     = filterInput(userConfig.room) || "local";
     userConfig.typing   = userConfig.typing ? true : false;
-    /**
-     * Set user variable to socket for reaching later.
-     */
     socket.set('user', userConfig, function (){
-      if (!user.room){
-        socket.join(userConfig.room);
-      }else if (user.room !== userConfig.room) {
-        socket.leave(user.room);
-        updateUsersList();
-        socket.join(userConfig.room);
+
+      switch (true){
+        case (!user.username && !user.room): // new logged in user
+          user = userConfig;
+          socket.join(user.room);
+          updateUsersList();
+          updateRoomsList();
+          break;
+        case (user.username !== userConfig.username) || // username changed
+             (user.typing !== userConfig.typing): // typing changed
+          user = userConfig;
+          updateUsersList();
+          break;
+        case (user.room !== userConfig.room): // room changed
+          //logout old room
+          socket.leave(user.room);
+          updateUsersList();
+          // login new room
+          user = userConfig;
+          socket.join(user.room);
+          // update list
+          updateUsersList();
+          updateRoomsList();
+          break;
+        default:
+          console.warn("setUser exits without an operation.");
+          break;
       }
-      user = userConfig;
-      updateUsersList();
-      updateRoomsList();
       socket.emit("setClientData", user);
     });
   });
@@ -97,7 +106,6 @@ io.sockets.on('connection', function (socket) {
       message: filterInput(message)
     });
   });
-
   /**
    * Remove user from room in disconnect
    */
