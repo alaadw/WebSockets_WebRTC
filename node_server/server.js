@@ -30,13 +30,10 @@ io.sockets.on('connection', function (socket) {
     var response = [];
     io.sockets.clients(user.room).forEach(function (socket){
       socket.get('user', function (err, fetchedUser){
-        response.push({
-          username: fetchedUser.username,
-          isTyping: fetchedUser.typing
-        });
+        response.push(fetchedUser);
       });
     });
-    io.sockets.in(user.room).emit('updateUserList', response);
+    socket.emit('updateUserList', response);
   };
   var updateRoomsList = function (){
     var hash = [];
@@ -54,6 +51,15 @@ io.sockets.on('connection', function (socket) {
     }
     io.sockets.emit('updateRooms', hash);
   };
+  var addUserToRoom = function (){
+    io.sockets.in(user.room).emit('addUserToRoom', user);
+  };
+  var editUser = function (newUser, oldUser){
+    io.sockets.in(user.room).emit('editUser', {"newConfig": newUser, "oldConfig": oldUser});
+  };
+  var exitRoom = function (){
+    io.sockets.in(user.room).emit('exitRoom', user);
+  }
   /**
    * Update user info.
    * @param  {string} username : Desired username
@@ -67,24 +73,25 @@ io.sockets.on('connection', function (socket) {
       switch (true){
         case (!user.username && !user.room): // new logged in user
           user = userConfig;
-          socket.join(user.room);
           updateUsersList();
+          socket.join(user.room);
+          addUserToRoom();
           updateRoomsList();
           break;
         case (user.username !== userConfig.username): // username changed
-        case (user.typing !== userConfig.typing): // typing changed
+        case (user.typing !== userConfig.typing): // typing changed,
+          editUser(userConfig, user);
           user = userConfig;
-          updateUsersList();
           break;
         case (user.room !== userConfig.room): // room changed
+          exitRoom();
           //logout old room
           socket.leave(user.room);
-          updateUsersList();
           // login new room
           user = userConfig;
-          socket.join(user.room);
-          // update list
           updateUsersList();
+          socket.join(user.room);
+          addUserToRoom();
           updateRoomsList();
           break;
         default:
@@ -94,7 +101,6 @@ io.sockets.on('connection', function (socket) {
       socket.emit("setClientData", user);
     });
   });
-
   /**
    * Broadcast message to the group
    * @param  {type} message
@@ -109,7 +115,8 @@ io.sockets.on('connection', function (socket) {
    * Remove user from room in disconnect
    */
   socket.on('disconnect', function (){
+    exitRoom();
     socket.leave(user.room);
-    updateUsersList(user.room);
+    updateRoomsList();
   });
 });

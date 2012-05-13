@@ -29,10 +29,10 @@
     $('.users>ul').html('');
     $(users).each(function (index, element){
       var typingText = "";
-      if (element.isTyping){
+      if (element.typing){
         typingText = " (typing)";
       }
-      $('.users>ul').append('<li>' + element.username + typingText + '</li>');
+      $('.users>ul').append('<li id="user_' + element.username + '">' + element.username + typingText + '</li>');
     });
   };
   /**
@@ -64,7 +64,7 @@
   var updateRooms = function (rooms){
     $('.rooms>ul').html('');
     $(rooms).each(function (index, element){
-      $('.rooms>ul').append('<li>' + element.roomName + ' (' + element.totalUsers + ')</li>');
+      $('.rooms>ul').append('<li id="room_' + element.roomName + '">' + element.roomName + ' (' + element.totalUsers + ')</li>');
     });
   };
   var startTyping = function (){
@@ -75,7 +75,36 @@
     user.typing = false;
     socket.emit('setUser', user);
   };
+  var addUserToRoom = function (newUser){
+    $('.users>ul').append('<li id="user_' + newUser.username + '">' + newUser.username + '</li>');
+  };
+  var exitRoom = function (data){
+    $('#user_'+data.username).remove();
+  };
+  var editUser = function (data){
+    if (data.newConfig.username !== data.oldConfig.username){
+      $('#user_'+data.oldConfig.username).attr('id', 'user_' + data.newConfig.username);
+      $('#user_'+data.newConfig.username).html(data.newConfig.username);
+    }
+    if (data.newConfig.typing !== data.oldConfig.typing){
+      var typingText = "";
+      if (data.newConfig.typing){
+        typingText = " (typing)";
+      }
+      $('#user_'+data.newConfig.username).html(data.newConfig.username + typingText);
+    }
+  };
   var setUserMedia = function (){
+
+    var onUserMediaSuccess = function (stream){
+      var url = webkitURL.createObjectURL(stream);
+      localVideo.attr("src", url);
+      localStream = stream;
+    };
+    var onUserMediaError = function (error){
+      alert("Failed to get access to local media. Error code was " + error.code + ".");
+    };
+
     try {
       navigator.webkitGetUserMedia({audio:true, video:true}, onUserMediaSuccess, onUserMediaError);
       console.log("Requested access to local media with new syntax.");
@@ -88,14 +117,7 @@
         console.log("webkitGetUserMedia failed with exception: " + e.message);
       }
     }
-  };
-  var onUserMediaSuccess = function (stream){
-    var url = webkitURL.createObjectURL(stream);
-    localVideo.attr("src", url);
-    localStream = stream;
-  };
-  var onUserMediaError = function (error){
-    alert("Failed to get access to local media. Error code was " + error.code + ".");
+
   };
   var initialize = function (){
     $('.chatScreen>input[type=button]').click(sendMessage);
@@ -132,6 +154,9 @@
       .on('setClientData', setUserInfo)
       .on('updateUserList', updateUserList)
       .on('updateChat', resMsg)
-      .on('updateRooms', updateRooms);
+      .on('updateRooms', updateRooms)
+      .on('addUserToRoom', addUserToRoom)
+      .on('editUser', editUser)
+      .on('exitRoom', exitRoom);
   });
 }()); // end of encapsulation
