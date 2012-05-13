@@ -69,6 +69,7 @@ io.sockets.on('connection', function (socket) {
     userConfig.username = filterInput(userConfig.username) || "guest" +  Math.floor(Math.random()*1000001).toString();
     userConfig.room     = filterInput(userConfig.room) || "local";
     userConfig.typing   = userConfig.typing ? true : false;
+    userConfig.id       = socket.id;
     socket.set('user', userConfig, function (){
       switch (true){
         case (!user.username && !user.room): // new logged in user
@@ -118,5 +119,9 @@ io.sockets.on('connection', function (socket) {
     exitRoom();
     socket.leave(user.room);
     updateRoomsList();
+  });
+  socket.on('message', function(message){
+    var broadcastMessage = message;
+    socket.broadcast.to(user.room).send(broadcastMessage);
   });
 });

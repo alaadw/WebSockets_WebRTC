@@ -1,12 +1,9 @@
-(function (){
+(function(){
   /**
    * Hold user properties. It is filled from server
    * @type {Object}
    */
   var user    = null;
-  
-  var localStream;
-  var localVideo;
   /**
    * Socket.io
    * @type {Object}
@@ -16,7 +13,7 @@
    * Set client data
    * @param  {Object} u : user object from server
    */
-  var setUserInfo = function (u){
+  var setUserInfo = function(u){
     user = u;
     $('#username').html(user.username);
     $('#room').html(user.room);
@@ -25,9 +22,9 @@
    * Update chat list for the room
    * @param  {Array} users : Array of the users
    */
-  var updateUserList = function (users){
+  var updateUserList = function(users){
     $('.users>ul').html('');
-    $(users).each(function (index, element){
+    $(users).each(function(index, element){
       var typingText = "";
       if (element.typing){
         typingText = " (typing)";
@@ -38,13 +35,13 @@
   /**
    * Message received function.
    */
-  var resMsg = function (resMsg){
+  var resMsg = function(resMsg){
     $('.chatScreen>ul').append('<li><b>' + resMsg.username + '</b>: ' + resMsg.message + '</li>');
   };
   /**
    * Send text message to the room
    */
-  var sendMessage = function (){
+  var sendMessage = function(){
       var textField = $('.chatScreen>input[type=text]')[0];
       var msg = textField.value;
       if (msg){
@@ -53,35 +50,35 @@
         socket.emit('sendMessage', msg);
       }
   };
-  var changeUsername = function (){
+  var changeUsername = function(){
     user.username = prompt("Username:");
     socket.emit('setUser', user);
   };
-  var changeRoom = function (){
+  var changeRoom = function(){
     user.room = prompt("Room name");
     socket.emit('setUser', user);
   };
-  var updateRooms = function (rooms){
+  var updateRooms = function(rooms){
     $('.rooms>ul').html('');
-    $(rooms).each(function (index, element){
+    $(rooms).each(function(index, element){
       $('.rooms>ul').append('<li id="room_' + element.roomName + '">' + element.roomName + ' (' + element.totalUsers + ')</li>');
     });
   };
-  var startTyping = function (){
+  var startTyping = function(){
     user.typing = true;
     socket.emit('setUser', user);
   };
-  var stopTyping = function (){
+  var stopTyping = function(){
     user.typing = false;
     socket.emit('setUser', user);
   };
-  var addUserToRoom = function (newUser){
+  var addUserToRoom = function(newUser){
     $('.users>ul').append('<li id="user_' + newUser.username + '">' + newUser.username + '</li>');
   };
-  var exitRoom = function (data){
+  var exitRoom = function(data){
     $('#user_'+data.username).remove();
   };
-  var editUser = function (data){
+  var editUser = function(data){
     if (data.newConfig.username !== data.oldConfig.username){
       $('#user_'+data.oldConfig.username).attr('id', 'user_' + data.newConfig.username);
       $('#user_'+data.newConfig.username).html(data.newConfig.username);
@@ -94,17 +91,71 @@
       $('#user_'+data.newConfig.username).html(data.newConfig.username + typingText);
     }
   };
-  var setUserMedia = function (){
 
-    var onUserMediaSuccess = function (stream){
-      var url = webkitURL.createObjectURL(stream);
+  var setUserMedia = function(){
+    var url;
+    var localStream;
+    var localVideo;
+    var pc;
+    var remoteVideo;
+    var started = false;
+    var onUserMediaSuccess = function(stream){
+      url = webkitURL.createObjectURL(stream);
       localVideo.attr("src", url);
       localStream = stream;
     };
-    var onUserMediaError = function (error){
+    var onUserMediaError = function(error){
       alert("Failed to get access to local media. Error code was " + error.code + ".");
     };
-
+    var start = function(){
+      if (!started && localStream){
+        createPeerConnection();
+        pc.addStream(localStream);
+        started = true;
+      }
+    };
+    var onSignalingMessage = function(message){
+      console.log("onSignalingMessage");
+      socket.send(message);
+    };
+    var onSessionConnecting = function(message){
+      console.log("onSessionConnecting");
+    }
+    var onSessionOpened = function(message){
+      console.log("onSessionOpened");
+    };
+    var onRemoteStreamAdded = function(event){
+      console.log("onRemoteStreamAdded");
+      remoteURL = webkitURL.createObjectURL(event.stream);
+      remoteVideo.attr("src",remoteURL);
+    }
+    var onRemoteStreamRemoved = function(event) {
+      console.log("onRemoteStreamRemoved");
+    }
+    var createPeerConnection = function(){
+      if(typeof webkitPeerConnection === 'function'){
+        pc = new webkitPeerConnection("NONE", onSignalingMessage);
+      }
+      else{
+        pc = new webkitDeprecatedPeerConnection("NONE", onSignalingMessage);
+      }
+      pc.onconnecting = onSessionConnecting;
+      pc.onopen = onSessionOpened;
+      pc.onaddstream = onRemoteStreamAdded;
+      pc.onremovestream = onRemoteStreamRemoved;
+    };
+    var onChannelMessage = function(message){
+      console.log('S->C: ' + message);
+      if (message.indexOf("\"ERROR\"", 0) == -1) {
+          if (!started) start();
+          pc.processSignalingMessage(message);
+      }
+    }
+    // initialize media
+    localVideo = $('#localVideo');
+    remoteVideo = $('#remoteVideo');
+    $('#startVideo').bind('click', start);
+    socket.on('message', onChannelMessage);
     try {
       navigator.webkitGetUserMedia({audio:true, video:true}, onUserMediaSuccess, onUserMediaError);
       console.log("Requested access to local media with new syntax.");
@@ -117,11 +168,11 @@
         console.log("webkitGetUserMedia failed with exception: " + e.message);
       }
     }
-
   };
-  var initialize = function (){
+
+  var initialize = function(){
     $('.chatScreen>input[type=button]').click(sendMessage);
-    $('.chatScreen>input[type=text]').bind('keyup', function (e){
+    $('.chatScreen>input[type=text]').bind('keyup', function(e){
       var code = (e.keyCode ? e.keyCode : e.which);
       if(code == 13) {
         sendMessage();
@@ -139,16 +190,14 @@
      */
     $('#changeUsername').click(changeUsername);
     $('#changeRoom').click(changeRoom);
-    // start media
-    localVideo = $('#localVideo')
-    setUserMedia();
     // initialize user
+    setUserMedia();
     socket.emit('setUser', user);
   };
   /**
    * Wait page to load
    */
-  $(function (){
+  $(function(){
     socket
       .on('connect', initialize)
       .on('setClientData', setUserInfo)
