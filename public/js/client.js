@@ -4,6 +4,9 @@
    * @type {Object}
    */
   var user    = null;
+  
+  var localStream;
+  var localVideo;
   /**
    * Socket.io
    * @type {Object}
@@ -72,7 +75,29 @@
     user.typing = false;
     socket.emit('setUser', user);
   };
-  var bindEvents = function (){
+  var setUserMedia = function (){
+    try {
+      navigator.webkitGetUserMedia({audio:true, video:true}, onUserMediaSuccess, onUserMediaError);
+      console.log("Requested access to local media with new syntax.");
+    } catch (e) {
+      try {
+        navigator.webkitGetUserMedia("video,audio", onUserMediaSuccess, onUserMediaError);
+        console.log("Requested access to local media with old syntax.");
+      }catch (e){
+        alert("webkitGetUserMedia() failed. Is the MediaStream flag enabled in about:flags?");
+        console.log("webkitGetUserMedia failed with exception: " + e.message);
+      }
+    }
+  };
+  var onUserMediaSuccess = function (stream){
+    var url = webkitURL.createObjectURL(stream);
+    localVideo.attr("src", url);
+    localStream = stream;
+  };
+  var onUserMediaError = function (error){
+    alert("Failed to get access to local media. Error code was " + error.code + ".");
+  };
+  var initialize = function (){
     $('.chatScreen>input[type=button]').click(sendMessage);
     $('.chatScreen>input[type=text]').bind('keyup', function (e){
       var code = (e.keyCode ? e.keyCode : e.which);
@@ -92,23 +117,21 @@
      */
     $('#changeUsername').click(changeUsername);
     $('#changeRoom').click(changeRoom);
+    // start media
+    localVideo = $('#localVideo')
+    setUserMedia();
+    // initialize user
+    socket.emit('setUser', user);
   };
   /**
    * Wait page to load
    */
   $(function (){
-    /**
-     * Trigger with successfull connection
-     */
-    socket.on('connect', function (){
-      bindEvents();
-      // listeners
-      socket.on('setClientData', setUserInfo);
-      socket.on('updateUserList', updateUserList);
-      socket.on('updateChat', resMsg);
-      socket.on('updateRooms', updateRooms);
-      // initialize user
-      socket.emit('setUser', user);
-    });
+    socket
+      .on('connect', initialize)
+      .on('setClientData', setUserInfo)
+      .on('updateUserList', updateUserList)
+      .on('updateChat', resMsg)
+      .on('updateRooms', updateRooms);
   });
-}());
+}()); // end of encapsulation

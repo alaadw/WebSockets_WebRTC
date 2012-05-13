@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Node.js &amp; socket.io</title>
+  <title>Node.js &amp; socket.io &amp; WebRTC</title>
   <meta name="description" content="This is an experimental project. Trying to make a web conference using WebRTC.">
   <meta name="author" content="Rüştü Seyhun Sarıyıldız">
   <!--[if lt IE 9]>
@@ -47,12 +47,17 @@
               <ul></ul>
             </div>
           </div>
-          <div class="span10">
+          <div class="span5">
             <div class="chatScreen">
               <ul></ul>
               <input type="text"><input type="button" value="Send">
             </div>
           </div>
+          <div class="span4">
+            <video width="100%" height="100%" id="localVideo" autoplay="autoplay"></video>
+          </div>
+        </div>
+        <div class="row remoteVideos">
         </div>
       </div>
       <footer>

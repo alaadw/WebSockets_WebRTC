@@ -64,7 +64,6 @@ io.sockets.on('connection', function (socket) {
     userConfig.room     = filterInput(userConfig.room) || "local";
     userConfig.typing   = userConfig.typing ? true : false;
     socket.set('user', userConfig, function (){
-
       switch (true){
         case (!user.username && !user.room): // new logged in user
           user = userConfig;
@@ -72,8 +71,8 @@ io.sockets.on('connection', function (socket) {
           updateUsersList();
           updateRoomsList();
           break;
-        case (user.username !== userConfig.username) || // username changed
-             (user.typing !== userConfig.typing): // typing changed
+        case (user.username !== userConfig.username): // username changed
+        case (user.typing !== userConfig.typing): // typing changed
           user = userConfig;
           updateUsersList();
           break;
@@ -98,7 +97,7 @@ io.sockets.on('connection', function (socket) {
 
   /**
    * Broadcast message to the group
-   * @param  {[type]} message
+   * @param  {type} message
    */
   socket.on('sendMessage', function (message){
     io.sockets.in(user.room).emit('updateChat', {
