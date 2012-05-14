@@ -93,69 +93,79 @@
   };
 
   var setUserMedia = function(){
-    var url;
+    var localURL;
     var localStream;
-    var localVideo;
-    var pc;
-    var remoteVideo;
-    var started = false;
+    var localVideo = $('#localVideo');
     var onUserMediaSuccess = function(stream){
-      url = webkitURL.createObjectURL(stream);
-      localVideo.attr("src", url);
+      localURL = webkitURL.createObjectURL(stream);
+      localVideo.attr("src", localURL);
       localStream = stream;
     };
     var onUserMediaError = function(error){
       alert("Failed to get access to local media. Error code was " + error.code + ".");
     };
-    var start = function(){
-      if (!started && localStream){
-        createPeerConnection();
-        pc.addStream(localStream);
-        started = true;
+
+    var streamInitialize = function(data){
+      var pc;
+      var remoteVideo;
+      var started = false;
+      data.streamID = data.streamID || data.starterUser.id + "_" + user.id;
+      var start = function(){
+        if (!started && localStream){
+          $(".videos").append('<video width="100%" height="100%" id="' + data.streamID + '" autoplay="autoplay"></video>');
+          remoteVideo = $("#"+data.streamID);
+          createPeerConnection();
+          pc.addStream(localStream);
+          started = true;
+        }
+      };
+      var onSignalingMessage = function(message){
+        console.log("onSignalingMessage");
+        socket.emit("message", {message: message, data: data});
+      };
+      var onSessionConnecting = function(message){
+        console.log("onSessionConnecting");
       }
-    };
-    var onSignalingMessage = function(message){
-      console.log("onSignalingMessage");
-      socket.send(message);
-    };
-    var onSessionConnecting = function(message){
-      console.log("onSessionConnecting");
-    }
-    var onSessionOpened = function(message){
-      console.log("onSessionOpened");
-    };
-    var onRemoteStreamAdded = function(event){
-      console.log("onRemoteStreamAdded");
-      remoteURL = webkitURL.createObjectURL(event.stream);
-      remoteVideo.attr("src",remoteURL);
-    }
-    var onRemoteStreamRemoved = function(event) {
-      console.log("onRemoteStreamRemoved");
-    }
-    var createPeerConnection = function(){
-      if(typeof webkitPeerConnection === 'function'){
-        pc = new webkitPeerConnection("NONE", onSignalingMessage);
+      var onSessionOpened = function(message){
+        console.log("onSessionOpened");
+      };
+      var onRemoteStreamAdded = function(event){
+        console.log("onRemoteStreamAdded");
+        remoteURL = webkitURL.createObjectURL(event.stream);
+        remoteVideo.attr("src",remoteURL);
       }
-      else{
-        pc = new webkitDeprecatedPeerConnection("NONE", onSignalingMessage);
+      var onRemoteStreamRemoved = function(event) {
+        console.log("onRemoteStreamRemoved");
       }
-      pc.onconnecting = onSessionConnecting;
-      pc.onopen = onSessionOpened;
-      pc.onaddstream = onRemoteStreamAdded;
-      pc.onremovestream = onRemoteStreamRemoved;
+      var createPeerConnection = function(){
+        if(typeof webkitPeerConnection === 'function'){
+          pc = new webkitPeerConnection("NONE", onSignalingMessage);
+        }
+        else{
+          pc = new webkitDeprecatedPeerConnection("NONE", onSignalingMessage);
+        }
+        pc.onconnecting = onSessionConnecting;
+        pc.onopen = onSessionOpened;
+        pc.onaddstream = onRemoteStreamAdded;
+        pc.onremovestream = onRemoteStreamRemoved;
+      };
+      var onChannelMessage = function(message){
+        console.log('S->C: ' + message);
+        if (message.indexOf("\"ERROR\"", 0) == -1) {
+            if (!started) start();
+            pc.processSignalingMessage(message);
+        }
+      }
+      if (typeof data.targetUser === "undefined"){
+        data.targetUser = user;
+        socket.emit('triggerStream', data);
+      }else{
+        start();
+        $("#startVideo").click(start);
+      }
+      socket.on('message'+data.streamID, onChannelMessage);
     };
-    var onChannelMessage = function(message){
-      console.log('S->C: ' + message);
-      if (message.indexOf("\"ERROR\"", 0) == -1) {
-          if (!started) start();
-          pc.processSignalingMessage(message);
-      }
-    }
-    // initialize media
-    localVideo = $('#localVideo');
-    remoteVideo = $('#remoteVideo');
-    $('#startVideo').bind('click', start);
-    socket.on('message', onChannelMessage);
+
     try {
       navigator.webkitGetUserMedia({audio:true, video:true}, onUserMediaSuccess, onUserMediaError);
       console.log("Requested access to local media with new syntax.");
@@ -168,6 +178,8 @@
         console.log("webkitGetUserMedia failed with exception: " + e.message);
       }
     }
+
+    socket.on('streamInitialize', streamInitialize);
   };
 
   var initialize = function(){

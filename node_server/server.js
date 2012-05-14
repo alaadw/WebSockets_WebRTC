@@ -51,6 +51,9 @@ io.sockets.on('connection', function (socket) {
     }
     io.sockets.emit('updateRooms', hash);
   };
+  var streamInitialize = function (){
+    socket.broadcast.to(user.room).emit('streamInitialize', {starterUser: user});
+  };
   var addUserToRoom = function (){
     io.sockets.in(user.room).emit('addUserToRoom', user);
   };
@@ -78,6 +81,7 @@ io.sockets.on('connection', function (socket) {
           socket.join(user.room);
           addUserToRoom();
           updateRoomsList();
+          streamInitialize();
           break;
         case (user.username !== userConfig.username): // username changed
         case (user.typing !== userConfig.typing): // typing changed,
@@ -120,8 +124,12 @@ io.sockets.on('connection', function (socket) {
     socket.leave(user.room);
     updateRoomsList();
   });
-  socket.on('message', function(message){
-    var broadcastMessage = message;
-    socket.broadcast.to(user.room).send(broadcastMessage);
+  socket.on('triggerStream', function(data){
+    io.sockets.socket(data.starterUser.id).emit("streamInitialize", data);
+  });
+  socket.on('message', function(config){
+    var broadcastMessage = config.message;
+    var data = config.data;
+    io.sockets.socket(data.targetUser.id).emit("message"+data.streamID, broadcastMessage);
   });
 });
