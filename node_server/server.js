@@ -51,17 +51,16 @@ io.sockets.on('connection', function (socket) {
     }
     io.sockets.emit('updateRooms', hash);
   };
-  var streamInitialize = function (){
-    socket.broadcast.to(user.room).emit('streamInitialize', {starterUser: user});
-  };
   var addUserToRoom = function (){
     io.sockets.in(user.room).emit('addUserToRoom', user);
+    socket.broadcast.to(user.room).emit('streamInitialize', {starterUser: user});
   };
   var editUser = function (newUser, oldUser){
     io.sockets.in(user.room).emit('editUser', {"newConfig": newUser, "oldConfig": oldUser});
   };
   var exitRoom = function (){
     io.sockets.in(user.room).emit('exitRoom', user);
+    socket.broadcast.to(user.room).emit('close', user.id);
   }
   /**
    * Update user info.
@@ -81,7 +80,6 @@ io.sockets.on('connection', function (socket) {
           socket.join(user.room);
           addUserToRoom();
           updateRoomsList();
-          streamInitialize();
           break;
         case (user.username !== userConfig.username): // username changed
         case (user.typing !== userConfig.typing): // typing changed,

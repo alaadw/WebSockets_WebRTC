@@ -56,6 +56,8 @@
   };
   var changeRoom = function(){
     user.room = prompt("Room name");
+    $('.remoteVideos').css("opacity", "0");
+    $('.remoteVideos').css("position", "absolute");
     socket.emit('setUser', user);
   };
   var updateRooms = function(rooms){
@@ -115,6 +117,7 @@
         if (!started && localStream){
           $(".videos").append('<video width="100%" height="100%" id="' + data.streamID + '" autoplay="autoplay"></video>');
           remoteVideo = $("#"+data.streamID);
+          remoteVideo.attr("class", "remoteVideos");
           createPeerConnection();
           pc.addStream(localStream);
           started = true;
@@ -157,7 +160,16 @@
             if (!started) start();
             pc.processSignalingMessage(message);
         }
-      }
+      };
+      var closeConnection = function(id){
+        if(data.streamID.indexOf(id)!==-1){
+          console.log("1",remoteVideo, pc);
+          remoteVideo.css("opacity", "0");
+          remoteVideo.css("position", "absolute");
+        }else{
+          console.log("2",remoteVideo, pc);
+        }
+      };
       if (typeof data.targetUser === "undefined"){
         console.log("streamInitializer1", data);
         data.targetUser = user;
@@ -169,8 +181,8 @@
         interval = setInterval(start, 1000);
       }
       socket.on('message'+data.streamID, onChannelMessage);
-    };
-
+      socket.on('close', closeConnection);
+    }; // end of stream initializer.
     try {
       navigator.webkitGetUserMedia({audio:true, video:true}, onUserMediaSuccess, onUserMediaError);
       console.log("Requested access to local media with new syntax.");
