@@ -104,11 +104,12 @@
     var onUserMediaError = function(error){
       alert("Failed to get access to local media. Error code was " + error.code + ".");
     };
-
     var streamInitialize = function(data){
       var pc;
       var remoteVideo;
       var started = false;
+      var targetUser;
+      var interval;
       data.streamID = data.streamID || data.starterUser.id + "_" + user.id;
       var start = function(){
         if (!started && localStream){
@@ -117,11 +118,12 @@
           createPeerConnection();
           pc.addStream(localStream);
           started = true;
+          clearInterval(interval);
         }
       };
       var onSignalingMessage = function(message){
         console.log("onSignalingMessage");
-        socket.emit("message", {message: message, data: data});
+        socket.emit("message", {message: message, targetUser: targetUser, data: data});
       };
       var onSessionConnecting = function(message){
         console.log("onSessionConnecting");
@@ -157,11 +159,14 @@
         }
       }
       if (typeof data.targetUser === "undefined"){
+        console.log("streamInitializer1", data);
         data.targetUser = user;
+        targetUser = data.starterUser;
         socket.emit('triggerStream', data);
       }else{
-        start();
-        $("#startVideo").click(start);
+        console.log("streamInitializer2", data);
+        targetUser = data.targetUser;
+        interval = setInterval(start, 1000);
       }
       socket.on('message'+data.streamID, onChannelMessage);
     };
@@ -178,7 +183,6 @@
         console.log("webkitGetUserMedia failed with exception: " + e.message);
       }
     }
-
     socket.on('streamInitialize', streamInitialize);
   };
 

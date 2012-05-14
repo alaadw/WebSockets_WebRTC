@@ -130,6 +130,7 @@ io.sockets.on('connection', function (socket) {
   socket.on('message', function(config){
     var broadcastMessage = config.message;
     var data = config.data;
-    io.sockets.socket(data.targetUser.id).emit("message"+data.streamID, broadcastMessage);
+    var targetUser = config.targetUser;
+    io.sockets.socket(targetUser.id).emit("message"+data.streamID, broadcastMessage);
   });
 });
