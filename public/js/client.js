@@ -144,10 +144,10 @@
       }
       var createPeerConnection = function(){
         if(typeof webkitPeerConnection === 'function'){
-          pc = new webkitPeerConnection("NONE", onSignalingMessage);
+          pc = new webkitPeerConnection("TURN numb.viagenie.ca seyhuns@gmail.com:123123", onSignalingMessage);
         }
         else{
-          pc = new webkitDeprecatedPeerConnection("NONE", onSignalingMessage);
+          pc = new webkitDeprecatedPeerConnection("TURN numb.viagenie.ca seyhuns@gmail.com:123123", onSignalingMessage);
         }
         pc.onconnecting = onSessionConnecting;
         pc.onopen = onSessionOpened;
