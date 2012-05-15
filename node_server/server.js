@@ -55,8 +55,8 @@ io.sockets.on('connection', function (socket) {
     io.sockets.in(user.room).emit('addUserToRoom', user);
     socket.broadcast.to(user.room).emit('streamInitialize', {starterUser: user});
   };
-  var editUser = function (newUser, oldUser){
-    io.sockets.in(user.room).emit('editUser', {"newConfig": newUser, "oldConfig": oldUser});
+  var editUser = function (){
+    io.sockets.in(user.room).emit('editUser', user);
   };
   var exitRoom = function (){
     io.sockets.in(user.room).emit('exitRoom', user);
@@ -82,8 +82,8 @@ io.sockets.on('connection', function (socket) {
           break;
         case (user.username !== userConfig.username): // username changed
         case (user.typing !== userConfig.typing): // typing changed,
-          editUser(userConfig, user);
           user = userConfig;
+          editUser();
           break;
         case (user.room !== userConfig.room): // room changed
           exitRoom();
@@ -107,7 +107,7 @@ io.sockets.on('connection', function (socket) {
    * Broadcast message to the group
    * @param  {type} message
    */
-  socket.on('sendMessage', function (message){
+  socket.on('sendTextMessage', function (message){
     io.sockets.in(user.room).emit('updateChat', {
       username: user.username,
       message: filterInput(message)

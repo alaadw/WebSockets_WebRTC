@@ -53,3 +53,15 @@ body {
   list-style-type: none;
   margin: 0 0 0 8px;
 }
+#chatScreen .messages{
+  height:200px;
+  border: 1px solid #EEE;
+  border-bottom: 0;
+  overflow-y:auto;
+}
+#chatScreen input[type=text]{
+  width:341px;
+}
+.row>div[class*="span"]{
+  border:none;
+}

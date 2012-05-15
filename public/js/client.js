@@ -11,10 +11,10 @@
   var socket  = io.connect('//' + window.location.host + ':8080');
   /**
    * Set client data
-   * @param  {Object} u : user object from server
+   * @param  {Object} rUser : user object received from server
    */
-  var setUserInfo = function(u){
-    user = u;
+  var setUserInfo = function(rUser){
+    user = rUser;
     $('#username').html(user.username);
     $('#room').html(user.room);
   };
@@ -29,73 +29,107 @@
       if (element.typing){
         typingText = " (typing)";
       }
-      $('.users>ul').append('<li id="user_' + element.username + '">' + element.username + typingText + '</li>');
+      $('.users>ul').append('<li id="user_' + element.id + '">' + element.username + typingText + '</li>');
     });
   };
   /**
-   * Message received function.
+   * Update rooms list from server
+   * @param {Array} rooms : Array of the rooms
    */
-  var resMsg = function(resMsg){
-    $('.chatScreen>ul').append('<li><b>' + resMsg.username + '</b>: ' + resMsg.message + '</li>');
-  };
-  /**
-   * Send text message to the room
-   */
-  var sendMessage = function(){
-      var textField = $('.chatScreen>input[type=text]')[0];
-      var msg = textField.value;
-      if (msg){
-        textField.value = "";
-        stopTyping();
-        socket.emit('sendMessage', msg);
-      }
-  };
-  var changeUsername = function(){
-    user.username = prompt("Username:");
-    socket.emit('setUser', user);
-  };
-  var changeRoom = function(){
-    user.room = prompt("Room name");
-    socket.emit('setUser', user);
-  };
   var updateRooms = function(rooms){
     $('.rooms>ul').html('');
     $(rooms).each(function(index, element){
       $('.rooms>ul').append('<li id="room_' + element.roomName + '">' + element.roomName + ' (' + element.totalUsers + ')</li>');
     });
   };
-  var startTyping = function(){
-    user.typing = true;
-    socket.emit('setUser', user);
+  /**
+   * Text message receive function
+   * @param {Object} messageInfo
+   */
+  var resTextMessage = function(messageInfo){
+    $('#chatScreen .messages').append('<div><b>' + messageInfo.username + '</b>: ' + messageInfo.message + '</div>')
+      .scrollTop(100000000000000000);
   };
-  var stopTyping = function(){
-    user.typing = false;
-    socket.emit('setUser', user);
-  };
-  var addUserToRoom = function(newUser){
-    $('.users>ul').append('<li id="user_' + newUser.username + '">' + newUser.username + '</li>');
-  };
-  var exitRoom = function(data){
-    $('#user_'+data.username).remove();
-  };
-  var editUser = function(data){
-    if (data.newConfig.username !== data.oldConfig.username){
-      $('#user_'+data.oldConfig.username).attr('id', 'user_' + data.newConfig.username);
-      $('#user_'+data.newConfig.username).html(data.newConfig.username);
-    }
-    if (data.newConfig.typing !== data.oldConfig.typing){
-      var typingText = "";
-      if (data.newConfig.typing){
-        typingText = " (typing)";
+  /**
+   * Send text message to the room
+   */
+  var sendTextMessage = function(){
+      var textField = $('#chatScreen input[type=text]')[0];
+      var msg = textField.value;
+      if (msg){
+        textField.value = "";
+        changeTyping(false);
+        socket.emit('sendTextMessage', msg);
       }
-      $('#user_'+data.newConfig.username).html(data.newConfig.username + typingText);
-    }
   };
-
+  /**
+   * Change username 
+   */
+  var changeUsername = function(){
+    user.username = prompt("Username:");
+    socket.emit('setUser', user);
+  };
+  /**
+   * Change room 
+   */
+  var changeRoom = function(){
+    user.room = prompt("Room name");
+    socket.emit('setUser', user);
+  };
+  /**
+   * Change typing status
+   * @param {boolean} isTyping 
+   */
+  var changeTyping = function(isTyping){
+    user.typing = isTyping;
+    socket.emit('setUser', user);
+  };
+  /**
+   * Add new user to the room
+   * @param {Object} newUser 
+   */
+  var addUserToRoom = function(newUser){
+    $('.users>ul').append('<li id="user_' + newUser.id + '">' + newUser.username + '</li>');
+  };
+  /**
+   * Remove user from the room list
+   * @param {Object} qUser 
+   */
+  var exitRoom = function(qUser){
+    $('#user_'+qUser.id).remove();
+  };
+  /**
+   * Update user with the user object received from server
+   * @param {object} eUser
+   */
+  var editUser = function(eUser){
+    $('#user_'+eUser.id).html(eUser.username);
+    var typingText = "";
+    if (eUser.typing){
+      typingText = " (typing)";
+    }
+    $('#user_'+eUser.id).html(eUser.username + typingText);
+  };
+  /**
+   * Initialize the user media for the user. 
+   */
   var setUserMedia = function(){
+    /**
+     * @type {string} 
+     */
     var localURL;
+    /**
+     * @type {stream} 
+     */
     var localStream;
+    /**
+     * @type {DOMElement} 
+     */
     var localVideo = $('#localVideo');
+    /**
+     * Initialize local stream 
+     * @param {stream} stream
+     */
     var onUserMediaSuccess = function(stream){
       localURL = webkitURL.createObjectURL(stream);
       localVideo.attr("src", localURL);
@@ -110,12 +144,8 @@
       var started = false;
       var targetUser;
       var interval;
-      data.streamID = data.streamID || data.starterUser.id + "_" + user.id;
       var start = function(){
         if (!started && localStream){
-          $(".videos").append('<video width="100%" height="100%" id="' + data.streamID + '" autoplay="autoplay"></video>');
-          remoteVideo = $("#"+data.streamID);
-          remoteVideo.attr("class", "remoteVideos");
           createPeerConnection();
           pc.addStream(localStream);
           started = true;
@@ -123,23 +153,19 @@
         }
       };
       var onSignalingMessage = function(message){
-        console.log("onSignalingMessage");
         socket.emit("message", {message: message, targetUser: targetUser, data: data});
       };
       var onSessionConnecting = function(message){
-        console.log("onSessionConnecting");
-      }
+      };
       var onSessionOpened = function(message){
-        console.log("onSessionOpened");
       };
       var onRemoteStreamAdded = function(event){
-        console.log("onRemoteStreamAdded");
         remoteURL = webkitURL.createObjectURL(event.stream);
-        remoteVideo.attr("src",remoteURL);
-      }
+        remoteVideo.attr("src",remoteURL).fadeTo(2000, 1);
+      };
       var onRemoteStreamRemoved = function(event) {
         console.log("onRemoteStreamRemoved");
-      }
+      };
       var createPeerConnection = function(){
         if(typeof webkitPeerConnection === 'function'){
           pc = new webkitPeerConnection("STUN stun.l.google.com:19302", onSignalingMessage);
@@ -166,23 +192,28 @@
           });
         }
         if(pc && tUser.id === user.id){
-          console.log("I am going");
           pc.close();
         }
       };
+      /**
+       * Set properties 
+       */
+      data.streamID = data.streamID || data.starterUser.id + "_" + user.id;
       if (typeof data.targetUser === "undefined"){
-        console.log("streamInitializer1", data);
         data.targetUser = user;
         targetUser = data.starterUser;
         socket.emit('triggerStream', data);
       }else{
-        console.log("streamInitializer2", data);
         targetUser = data.targetUser;
         interval = setInterval(start, 1000);
       }
+      remoteVideo = $('<video width="100%" height="100%" id="' + data.streamID + '" autoplay="autoplay"></video>')
+        .css("opacity", 0)
+        .attr("class", "remoteVideos");
+      $(".videos").append(remoteVideo);
       socket.on('message'+data.streamID, onChannelMessage);
       socket.on('exitRoom', closeConnection);
-    }; // end of stream initializer.
+    }; // end of streamInitialize
     try {
       navigator.webkitGetUserMedia({audio:true, video:true}, onUserMediaSuccess, onUserMediaError);
       console.log("Requested access to local media with new syntax.");
@@ -199,17 +230,17 @@
   };
 
   var initialize = function(){
-    $('.chatScreen>input[type=button]').click(sendMessage);
-    $('.chatScreen>input[type=text]').bind('keyup', function(e){
+    $('#chatScreen input[type=button]').click(sendTextMessage);
+    $('#chatScreen input[type=text]').bind('keyup', function(e){
       var code = (e.keyCode ? e.keyCode : e.which);
       if(code == 13) {
-        sendMessage();
+        sendTextMessage();
       }
       if (this.value.length === 0){
-        stopTyping();
+        changeTyping(false);
       }else{
         if (user.typing === false){
-          startTyping();
+          changeTyping(true);
         }
       }
     });
@@ -230,7 +261,7 @@
       .on('connect', initialize)
       .on('setClientData', setUserInfo)
       .on('updateUserList', updateUserList)
-      .on('updateChat', resMsg)
+      .on('updateChat', resTextMessage)
       .on('updateRooms', updateRooms)
       .on('addUserToRoom', addUserToRoom)
       .on('editUser', editUser)
