@@ -60,7 +60,6 @@ io.sockets.on('connection', function (socket) {
   };
   var exitRoom = function (){
     io.sockets.in(user.room).emit('exitRoom', user);
-    socket.broadcast.to(user.room).emit('close', user.id);
   }
   /**
    * Update user info.

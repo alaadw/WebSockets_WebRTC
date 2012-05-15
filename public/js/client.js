@@ -56,8 +56,6 @@
   };
   var changeRoom = function(){
     user.room = prompt("Room name");
-    $('.remoteVideos').css("opacity", "0");
-    $('.remoteVideos').css("position", "absolute");
     socket.emit('setUser', user);
   };
   var updateRooms = function(rooms){
@@ -144,10 +142,10 @@
       }
       var createPeerConnection = function(){
         if(typeof webkitPeerConnection === 'function'){
-          pc = new webkitPeerConnection("TURN numb.viagenie.ca seyhuns@gmail.com:123123", onSignalingMessage);
+          pc = new webkitPeerConnection("STUN stun.l.google.com:19302", onSignalingMessage);
         }
         else{
-          pc = new webkitDeprecatedPeerConnection("TURN numb.viagenie.ca seyhuns@gmail.com:123123", onSignalingMessage);
+          pc = new webkitDeprecatedPeerConnection("STUN stun.l.google.com:19302", onSignalingMessage);
         }
         pc.onconnecting = onSessionConnecting;
         pc.onopen = onSessionOpened;
@@ -155,19 +153,21 @@
         pc.onremovestream = onRemoteStreamRemoved;
       };
       var onChannelMessage = function(message){
-        console.log('S->C: ' + message);
         if (message.indexOf("\"ERROR\"", 0) == -1) {
             if (!started) start();
             pc.processSignalingMessage(message);
         }
       };
-      var closeConnection = function(id){
-        if(data.streamID.indexOf(id)!==-1){
-          console.log("1",remoteVideo, pc);
-          remoteVideo.css("opacity", "0");
-          remoteVideo.css("position", "absolute");
-        }else{
-          console.log("2",remoteVideo, pc);
+      var closeConnection = function(tUser){
+        if(remoteVideo && data.streamID.indexOf(tUser.id)!==-1){
+          remoteVideo.fadeTo(2000, 0, function(){
+            remoteVideo.attr("src", "");
+            remoteVideo.remove();
+          });
+        }
+        if(pc && tUser.id === user.id){
+          console.log("I am going");
+          pc.close();
         }
       };
       if (typeof data.targetUser === "undefined"){
@@ -181,7 +181,7 @@
         interval = setInterval(start, 1000);
       }
       socket.on('message'+data.streamID, onChannelMessage);
-      socket.on('close', closeConnection);
+      socket.on('exitRoom', closeConnection);
     }; // end of stream initializer.
     try {
       navigator.webkitGetUserMedia({audio:true, video:true}, onUserMediaSuccess, onUserMediaError);
