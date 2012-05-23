@@ -60,7 +60,7 @@ body {
   overflow-y:auto;
 }
 #chatScreen input[type=text]{
-  width:341px;
+  width:339px;
 }
 .row>div[class*="span"]{
   border:none;

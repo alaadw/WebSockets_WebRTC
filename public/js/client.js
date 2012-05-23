@@ -3,7 +3,7 @@
    * Hold user properties. It is filled from server
    * @type {Object}
    */
-  var user    = null;
+  var user;
   /**
    * Socket.io
    * @type {Object}
