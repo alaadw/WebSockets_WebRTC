@@ -60,7 +60,7 @@ io.sockets.on('connection', function (socket) {
   };
   var exitRoom = function (){
     io.sockets.in(user.room).emit('exitRoom', user);
-  }
+  };
   /**
    * Update user info.
    * @param  {string} username : Desired username
